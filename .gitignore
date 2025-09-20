@@ -1,0 +1,22 @@
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Env & secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+logs/
+*.log
+
+# Editors & OS
+.vscode/
+.idea/
+.DS_Store
+
+# Codex / project meta
+AGENTS.md
+codex/
