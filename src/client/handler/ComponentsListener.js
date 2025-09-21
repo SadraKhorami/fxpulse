@@ -2,6 +2,7 @@ const DiscordBot = require("../DiscordBot");
 const config = require("../../config");
 const { error } = require("../../utils/Console");
 const { handleFxPulseComponent } = require("../../interactions/fxpulseControls");
+const { withEphemeral } = require("../../utils/interaction");
 
 class ComponentsListener {
     /**
@@ -12,10 +13,9 @@ class ComponentsListener {
         client.on('interactionCreate', async (interaction) => {
             const checkUserPermissions = async (component) => {
                 if (component.options?.public === false && interaction.user.id !== interaction.message.interaction.user.id) {
-                    await interaction.reply({
-                        content: config.messages.COMPONENT_NOT_PUBLIC,
-                        ephemeral: true
-                    });
+                    await interaction.reply(withEphemeral({
+                        content: config.messages.COMPONENT_NOT_PUBLIC
+                    }));
 
                     return false;
                 }

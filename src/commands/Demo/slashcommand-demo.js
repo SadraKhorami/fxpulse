@@ -2,6 +2,7 @@ const { ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
 const ApplicationCommand = require('../../structure/ApplicationCommand');
 const { buildPairSelectRow } = require('../../utils/components');
 const popularPairs = require('../../constants/pairs');
+const { withEphemeral } = require('../../utils/interaction');
 
 module.exports = new ApplicationCommand({
     command: {
@@ -29,7 +30,7 @@ module.exports = new ApplicationCommand({
         const sub = interaction.options.getSubcommand();
 
         if (sub !== 'select-pair') {
-            await interaction.reply({ content: 'Unknown demo action.', ephemeral: true });
+            await interaction.reply(withEphemeral({ content: 'Unknown demo action.' }));
             return;
         }
 
@@ -37,10 +38,10 @@ module.exports = new ApplicationCommand({
             .setTitle('FXPulse Demo')
             .setDescription('Pick a pair to fetch the latest snapshot.')
             .setColor(0x5865f2)
-            .setFooter({ text: 'FXPulse • data via finance.khorami.dev' });
+            .setFooter({ text: 'FXPulse • developed by wise.fox' });
 
         const components = [buildPairSelectRow(popularPairs[0] || 'XAUUSD')];
 
-        await interaction.reply({ embeds: [embed], components, ephemeral: true });
+        await interaction.reply(withEphemeral({ embeds: [embed], components }));
     }
 }).toJSON();

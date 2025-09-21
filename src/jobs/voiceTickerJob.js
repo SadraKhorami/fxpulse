@@ -167,10 +167,6 @@ class VoiceTickerJob {
 
         if (!name.length) return null;
 
-        if (quotes.every((quote) => quote.marketStatus && quote.marketStatus.isOpen === false)) {
-            name = `${name} • Closed`;
-        }
-
         return name.slice(0, 96);
     }
 

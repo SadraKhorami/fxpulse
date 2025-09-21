@@ -2,6 +2,7 @@ const ApplicationCommand = require('../../structure/ApplicationCommand');
 const { buildPriceEmbed, buildErrorEmbed } = require('../../utils/embed');
 const { getQuote, normalizeSymbol } = require('../../services/quotes');
 const { requireGuildConfig, requirePermission } = require('../../permissions/guards');
+const { withEphemeral } = require('../../utils/interaction');
 
 const SYMBOL_REGEX = /([A-Z]{2,6}:[A-Z]{3,6}|[A-Z]{3,6})/g;
 
@@ -21,7 +22,7 @@ module.exports = new ApplicationCommand({
      */
     run: async (client, interaction) => {
         if (!interaction.inGuild()) {
-            await interaction.reply({ embeds: [buildErrorEmbed('Guild only command.')], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Guild only command.')] }));
             return;
         }
 
@@ -29,7 +30,7 @@ module.exports = new ApplicationCommand({
         const match = content.toUpperCase().match(SYMBOL_REGEX);
 
         if (!match || !match.length) {
-            await interaction.reply({ embeds: [buildErrorEmbed('No symbol detected in message. Mention a pair like XAUUSD or ODANA:XAUUSD.')], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('No symbol detected in message. Mention a pair like XAUUSD or ODANA:XAUUSD.')] }));
             return;
         }
 
@@ -37,24 +38,24 @@ module.exports = new ApplicationCommand({
         const { ok, config, reason } = await requireGuildConfig(interaction.guildId);
 
         if (!ok) {
-            await interaction.reply({ embeds: [buildErrorEmbed(reason)], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed(reason)] }));
             return;
         }
 
         const permission = requirePermission(interaction.member, config);
 
         if (!permission.ok) {
-            await interaction.reply({ embeds: [buildErrorEmbed(permission.reason)], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed(permission.reason)] }));
             return;
         }
 
         try {
-            await interaction.deferReply({ ephemeral: true });
+            await interaction.deferReply(withEphemeral());
             const quote = await getQuote(symbol, config.defaultInterval);
             const embed = buildPriceEmbed({ quote, interval: config.defaultInterval, precisionOverride: config.voiceTicker?.precision, locale: config.locale });
             await interaction.editReply({ embeds: [embed] });
         } catch (err) {
-            await interaction.editReply({ embeds: [buildErrorEmbed('Unable to fetch market data right now.')], ephemeral: true });
+            await interaction.editReply({ embeds: [buildErrorEmbed('Unable to fetch market data right now.')] });
             throw err;
         }
     }

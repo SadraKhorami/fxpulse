@@ -1,6 +1,7 @@
 const { ModalSubmitInteraction } = require("discord.js");
 const DiscordBot = require("../../client/DiscordBot");
 const Component = require("../../structure/Component");
+const { withEphemeral } = require("../../utils/interaction");
 
 module.exports = new Component({
     customId: 'example-modal-id',
@@ -14,10 +15,9 @@ module.exports = new Component({
 
         const field = interaction.fields.getTextInputValue('example-modal-id-field-1');
 
-        await interaction.reply({
-            content: 'Hello **' + field + '**.',
-            ephemeral: true
-        });
+        await interaction.reply(withEphemeral({
+            content: 'Hello **' + field + '**.'
+        }));
 
     }
 }).toJSON();

@@ -3,6 +3,7 @@ const ApplicationCommand = require('../../structure/ApplicationCommand');
 const guildConfigService = require('../../services/guildConfig');
 const { buildErrorEmbed } = require('../../utils/embed');
 const { requireGuildConfig, isAdmin } = require('../../permissions/guards');
+const { withEphemeral } = require('../../utils/interaction');
 
 module.exports = new ApplicationCommand({
     command: {
@@ -87,7 +88,7 @@ module.exports = new ApplicationCommand({
      */
     run: async (client, interaction) => {
         if (!interaction.inGuild()) {
-            await interaction.reply({ embeds: [buildErrorEmbed('Guild only command.')], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Guild only command.')] }));
             return;
         }
 
@@ -95,12 +96,12 @@ module.exports = new ApplicationCommand({
         const { ok, config, reason } = await requireGuildConfig(guildId);
 
         if (!ok) {
-            await interaction.reply({ embeds: [buildErrorEmbed(reason)], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed(reason)] }));
             return;
         }
 
         if (!isAdmin(interaction.member)) {
-            await interaction.reply({ embeds: [buildErrorEmbed('Administrator or Manage Guild permission required.')], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Administrator or Manage Guild permission required.')] }));
             return;
         }
 
@@ -126,7 +127,7 @@ module.exports = new ApplicationCommand({
                 await setIntervalDefault(interaction, guildId);
                 break;
             default:
-                await interaction.reply({ embeds: [buildErrorEmbed('Unknown subcommand.')], ephemeral: true });
+                await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Unknown subcommand.')] }));
         }
     }
 }).toJSON();
@@ -141,27 +142,27 @@ const showSettings = async (interaction, config) => {
             { name: 'Allowed Roles', value: formatRoles(config.allowedRoles), inline: false },
             { name: 'Watchlist', value: (config.watchlist || []).map((p) => `• ${p}`).join('\n') || '—', inline: false }
         )
-        .setFooter({ text: 'FXPulse • data via finance.khorami.dev' });
+        .setFooter({ text: 'FXPulse • developed by wise.fox' });
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply(withEphemeral({ embeds: [embed] }));
 };
 
 const setLocale = async (interaction, guildId) => {
     const locale = interaction.options.getString('locale', true);
     await guildConfigService.setLocale(guildId, locale);
-    await interaction.reply({ content: `Locale set to **${locale}**.`, ephemeral: true });
+    await interaction.reply(withEphemeral({ content: `Locale set to **${locale}**.` }));
 };
 
 const allowRole = async (interaction, guildId) => {
     const role = interaction.options.getRole('role', true);
     await guildConfigService.addRole(guildId, role.id);
-    await interaction.reply({ content: `Role ${role} added to FXPulse whitelist.`, ephemeral: true });
+    await interaction.reply(withEphemeral({ content: `Role ${role} added to FXPulse whitelist.` }));
 };
 
 const denyRole = async (interaction, guildId) => {
     const role = interaction.options.getRole('role', true);
     await guildConfigService.removeRole(guildId, role.id);
-    await interaction.reply({ content: `Role ${role} removed from FXPulse whitelist.`, ephemeral: true });
+    await interaction.reply(withEphemeral({ content: `Role ${role} removed from FXPulse whitelist.` }));
 };
 
 const listRoles = async (interaction, config) => {
@@ -169,20 +170,20 @@ const listRoles = async (interaction, config) => {
         .setTitle('FXPulse Whitelisted Roles')
         .setColor(0x5865f2)
         .setDescription(formatRoles(config.allowedRoles))
-        .setFooter({ text: 'FXPulse • data via finance.khorami.dev' });
+        .setFooter({ text: 'FXPulse • developed by wise.fox' });
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply(withEphemeral({ embeds: [embed] }));
 };
 
 const setIntervalDefault = async (interaction, guildId) => {
     const interval = interaction.options.getString('interval', true).replace(/[^0-9]/g, '');
     if (!interval) {
-        await interaction.reply({ embeds: [buildErrorEmbed('Interval must be numeric minutes.')], ephemeral: true });
+        await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Interval must be numeric minutes.')] }));
         return;
     }
 
     await guildConfigService.setDefaultInterval(guildId, interval);
-    await interaction.reply({ content: `Default interval set to ${interval} minutes.`, ephemeral: true });
+    await interaction.reply(withEphemeral({ content: `Default interval set to ${interval} minutes.` }));
 };
 
 const formatRoles = (roles = []) => roles.length ? roles.map((id) => `<@&${id}>`).join('\n') : 'No roles whitelisted yet.';

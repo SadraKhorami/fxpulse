@@ -6,6 +6,7 @@ const { handleMessageCommandOptions, handleApplicationCommandOptions } = require
 const ApplicationCommand = require("../../structure/ApplicationCommand");
 const { error } = require("../../utils/Console");
 const { buildErrorEmbed } = require("../../utils/embed");
+const { withEphemeral } = require("../../utils/interaction");
 
 class CommandsListener {
     /**
@@ -49,8 +50,7 @@ class CommandsListener {
 
                 if (command.command?.permissions && !message.member.permissions.has(PermissionsBitField.resolve(command.command.permissions))) {
                     await message.reply({
-                        content: config.messages.MISSING_PERMISSIONS,
-                        ephemeral: true
+                        content: config.messages.MISSING_PERMISSIONS
                     });
 
                     return;
@@ -89,13 +89,13 @@ class CommandsListener {
                 error(err);
                 if (!interaction.deferred && !interaction.replied) {
                     try {
-                        await interaction.reply({ embeds: [buildErrorEmbed('Unexpected error while running this command.')], ephemeral: true });
+                        await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Unexpected error while running this command.')] }));
                     } catch {
                         // ignore
                     }
                 } else {
                     try {
-                        await interaction.followUp({ embeds: [buildErrorEmbed('Unexpected error while running this command.')], ephemeral: true });
+                        await interaction.followUp(withEphemeral({ embeds: [buildErrorEmbed('Unexpected error while running this command.')] }));
                     } catch {
                         // ignore
                     }

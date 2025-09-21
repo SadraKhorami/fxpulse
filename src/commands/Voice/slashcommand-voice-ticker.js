@@ -4,6 +4,7 @@ const guildConfigService = require('../../services/guildConfig');
 const { normalizeSymbol } = require('../../services/quotes');
 const { buildErrorEmbed } = require('../../utils/embed');
 const { requireGuildConfig, isAdmin } = require('../../permissions/guards');
+const { withEphemeral } = require('../../utils/interaction');
 
 module.exports = new ApplicationCommand({
     command: {
@@ -97,7 +98,7 @@ module.exports = new ApplicationCommand({
      */
     run: async (client, interaction) => {
         if (!interaction.inGuild()) {
-            await interaction.reply({ embeds: [buildErrorEmbed('Use this command inside a guild.')], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Use this command inside a guild.')] }));
             return;
         }
 
@@ -105,12 +106,12 @@ module.exports = new ApplicationCommand({
         const { ok, config, reason } = await requireGuildConfig(guildId);
 
         if (!ok) {
-            await interaction.reply({ embeds: [buildErrorEmbed(reason)], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed(reason)] }));
             return;
         }
 
         if (!isAdmin(interaction.member)) {
-            await interaction.reply({ embeds: [buildErrorEmbed('Administrator or Manage Guild permission required.')], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Administrator or Manage Guild permission required.')] }));
             return;
         }
 
@@ -136,7 +137,7 @@ module.exports = new ApplicationCommand({
                 await handleShow(interaction, config);
                 break;
             default:
-                await interaction.reply({ embeds: [buildErrorEmbed('Unknown subcommand.')], ephemeral: true });
+                await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Unknown subcommand.')] }));
         }
     }
 }).toJSON();
@@ -165,39 +166,39 @@ const handleEnable = async (interaction, config, client, guildId) => {
 
     client.voiceTicker?.start(guildId);
 
-    await interaction.reply({ content: `Voice ticker enabled on **${channel.name}**.`, ephemeral: true });
+    await interaction.reply(withEphemeral({ content: `Voice ticker enabled on **${channel.name}**.` }));
 };
 
 const handleDisable = async (interaction, client, guildId) => {
     await guildConfigService.setVoiceTicker(guildId, { enabled: false });
     client.voiceTicker?.stop(guildId, { restoreName: true });
-    await interaction.reply({ content: 'Voice ticker disabled.', ephemeral: true });
+    await interaction.reply(withEphemeral({ content: 'Voice ticker disabled.' }));
 };
 
 const handleSetPairs = async (interaction, guildId) => {
     const pairs = parsePairs(interaction.options.getString('pairs', true));
     const updated = await guildConfigService.setVoiceTicker(guildId, { pairs });
     interaction.client.voiceTicker?.start(guildId);
-    await interaction.reply({ content: `Ticker pairs updated (${updated.voiceTicker.pairs.length} symbols).`, ephemeral: true });
+    await interaction.reply(withEphemeral({ content: `Ticker pairs updated (${updated.voiceTicker.pairs.length} symbols).` }));
 };
 
 const handleSetFormat = async (interaction, guildId) => {
     const format = interaction.options.getString('format', true);
     if (!format.includes('{PAIR}') || !format.includes('{PRICE}')) {
-        await interaction.reply({ embeds: [buildErrorEmbed('Format must contain {PAIR} and {PRICE}.')], ephemeral: true });
+        await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('Format must contain {PAIR} and {PRICE}.')] }));
         return;
     }
 
     await guildConfigService.setVoiceTicker(guildId, { format });
     interaction.client.voiceTicker?.start(guildId);
-    await interaction.reply({ content: 'Ticker format updated.', ephemeral: true });
+    await interaction.reply(withEphemeral({ content: 'Ticker format updated.' }));
 };
 
 const handleSetPrecision = async (interaction, guildId) => {
     const digits = interaction.options.getInteger('digits', true);
     await guildConfigService.setVoiceTicker(guildId, { precision: digits });
     interaction.client.voiceTicker?.start(guildId);
-    await interaction.reply({ content: `Ticker precision set to ${digits} decimals.`, ephemeral: true });
+    await interaction.reply(withEphemeral({ content: `Ticker precision set to ${digits} decimals.` }));
 };
 
 const handleShow = async (interaction, config) => {
@@ -212,7 +213,7 @@ const handleShow = async (interaction, config) => {
             { name: 'Precision', value: `${ticker.precision ?? 3}`, inline: true },
             { name: 'Pairs', value: (ticker.pairs && ticker.pairs.length) ? ticker.pairs.map((p) => `• ${p}`).join('\n') : '—' }
         )
-        .setFooter({ text: 'FXPulse • data via finance.khorami.dev' });
+        .setFooter({ text: 'FXPulse • developed by wise.fox' });
 
-    await interaction.reply({ embeds: [embed], ephemeral: true });
+    await interaction.reply(withEphemeral({ embeds: [embed] }));
 };

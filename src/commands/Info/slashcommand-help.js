@@ -1,5 +1,6 @@
 const { ApplicationCommandOptionType, EmbedBuilder } = require('discord.js');
 const ApplicationCommand = require('../../structure/ApplicationCommand');
+const { withEphemeral } = require('../../utils/interaction');
 
 const describe = (cmd) => cmd.metadata?.shortDescription || cmd.command.description || '—';
 
@@ -33,7 +34,7 @@ module.exports = new ApplicationCommand({
         const embed = new EmbedBuilder()
             .setTitle('FXPulse Help')
             .setColor(0x5865f2)
-            .setFooter({ text: 'FXPulse • data via finance.khorami.dev' });
+            .setFooter({ text: 'FXPulse • developed by wise.fox' });
 
         if (target) {
             const lower = target.toLowerCase();
@@ -41,7 +42,7 @@ module.exports = new ApplicationCommand({
 
             if (!found) {
                 embed.setDescription(`Unknown command: **${target}**`);
-                await interaction.reply({ embeds: [embed], ephemeral: true });
+                await interaction.reply(withEphemeral({ embeds: [embed] }));
                 return;
             }
 
@@ -63,7 +64,7 @@ module.exports = new ApplicationCommand({
                 embed.addFields({ name: 'Permissions', value: found.metadata.permissions });
             }
 
-            await interaction.reply({ embeds: [embed], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [embed] }));
             return;
         }
 
@@ -77,6 +78,6 @@ module.exports = new ApplicationCommand({
 
         embed.addFields(fields);
 
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply(withEphemeral({ embeds: [embed] }));
     }
 }).toJSON();

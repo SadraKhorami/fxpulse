@@ -5,6 +5,7 @@ const guildConfigService = require('../../services/guildConfig');
 const { buildPriceEmbed, buildAnalysisEmbed, buildErrorEmbed } = require('../../utils/embed');
 const { buildPriceComponents } = require('../../utils/components');
 const { requireGuildConfig, requirePermission } = require('../../permissions/guards');
+const { withEphemeral } = require('../../utils/interaction');
 
 const INTERVAL_DESC = 'Interval in minutes (1,5,15,60). Defaults to guild setting or API default.';
 
@@ -116,7 +117,7 @@ module.exports = new ApplicationCommand({
      */
     run: async (client, interaction) => {
         if (!interaction.inGuild()) {
-            await interaction.reply({ embeds: [buildErrorEmbed('FXPulse commands require a guild.')], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed('FXPulse commands require a guild.')] }));
             return;
         }
 
@@ -124,14 +125,14 @@ module.exports = new ApplicationCommand({
         const { ok, config, reason } = await requireGuildConfig(guildId);
 
         if (!ok) {
-            await interaction.reply({ embeds: [buildErrorEmbed(reason)], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed(reason)] }));
             return;
         }
 
         const permission = requirePermission(interaction.member, config);
 
         if (!permission.ok) {
-            await interaction.reply({ embeds: [buildErrorEmbed(permission.reason)], ephemeral: true });
+            await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed(permission.reason)] }));
             return;
         }
 
@@ -161,9 +162,9 @@ module.exports = new ApplicationCommand({
             if (interaction.deferred) {
                 await interaction.editReply({ embeds: [buildErrorEmbed(message)], components: [] });
             } else if (!interaction.replied) {
-                await interaction.reply({ embeds: [buildErrorEmbed(message)], ephemeral: true });
+                await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed(message)] }));
             } else {
-                await interaction.followUp({ embeds: [buildErrorEmbed(message)], ephemeral: true });
+                await interaction.followUp(withEphemeral({ embeds: [buildErrorEmbed(message)] }));
             }
 
             throw err;
@@ -184,7 +185,7 @@ const handlePrice = async (interaction, config) => {
     const symbol = normalizeSymbol(pairRaw);
     const interval = sanitizeInterval(intervalInput, config.defaultInterval);
 
-    await interaction.deferReply({ ephemeral });
+    await interaction.deferReply(ephemeral ? withEphemeral() : {});
 
     const quote = await getQuote(symbol, interval);
 
@@ -205,7 +206,7 @@ const handleAnalyze = async (interaction, config) => {
     const symbol = normalizeSymbol(pairRaw);
     const interval = sanitizeInterval(intervalInput, config.defaultInterval);
 
-    await interaction.deferReply({ ephemeral: true });
+    await interaction.deferReply(withEphemeral());
 
     const quote = await getQuote(symbol, interval);
 
@@ -223,9 +224,9 @@ const handleWatchSubcommand = async (interaction, config, subcommand) => {
             .setColor(0x5865f2)
             .setTitle('FXPulse Watchlist')
             .setDescription(watchlist.length ? watchlist.map((pair) => `• ${pair}`).join('\n') : 'Watchlist is empty — add pairs with `/fx watch add`.')
-            .setFooter({ text: 'FXPulse • data via finance.khorami.dev' });
+            .setFooter({ text: 'FXPulse • developed by wise.fox' });
 
-        await interaction.reply({ embeds: [embed], ephemeral: true });
+        await interaction.reply(withEphemeral({ embeds: [embed] }));
         return;
     }
 
@@ -234,13 +235,13 @@ const handleWatchSubcommand = async (interaction, config, subcommand) => {
 
     if (subcommand === 'add') {
         const updated = await guildConfigService.addWatchPair(guildId, symbol);
-        await interaction.reply({ content: `Added **${symbol}** to the watchlist (${updated.watchlist.length} total).`, ephemeral: true });
+        await interaction.reply(withEphemeral({ content: `Added **${symbol}** to the watchlist (${updated.watchlist.length} total).` }));
         return;
     }
 
     if (subcommand === 'remove') {
         const updated = await guildConfigService.removeWatchPair(guildId, symbol);
-        await interaction.reply({ content: `Removed **${symbol}** from the watchlist (${updated.watchlist.length} remaining).`, ephemeral: true });
+        await interaction.reply(withEphemeral({ content: `Removed **${symbol}** from the watchlist (${updated.watchlist.length} remaining).` }));
         return;
     }
 };

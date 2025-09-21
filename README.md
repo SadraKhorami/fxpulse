@@ -60,4 +60,4 @@ LinkedIn: [https://www.linkedin.com/in/khoramii/](https://www.linkedin.com/in/kh
 Discord: `wise.fox`
 
 ---
-FXPulse • data via finance.khorami.dev
+FXPulse • developed by wise.fox

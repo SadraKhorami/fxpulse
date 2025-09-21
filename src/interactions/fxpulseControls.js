@@ -3,18 +3,19 @@ const { buildPriceComponents, parseCustomId } = require('../utils/components');
 const { getQuote, normalizeSymbol } = require('../services/quotes');
 const guildConfigService = require('../services/guildConfig');
 const { requireGuildConfig, requirePermission } = require('../permissions/guards');
+const { withEphemeral } = require('../utils/interaction');
 
 const handlePriceUpdate = async (interaction, symbol, intervalOverride) => {
     const { ok, config, reason } = await requireGuildConfig(interaction.guildId);
 
     if (!ok) {
-        await interaction.followUp({ embeds: [buildErrorEmbed(reason)], ephemeral: true });
+        await interaction.followUp(withEphemeral({ embeds: [buildErrorEmbed(reason)] }));
         return;
     }
 
     const permission = requirePermission(interaction.member, config);
     if (!permission.ok) {
-        await interaction.followUp({ embeds: [buildErrorEmbed(permission.reason)], ephemeral: true });
+        await interaction.followUp(withEphemeral({ embeds: [buildErrorEmbed(permission.reason)] }));
         return;
     }
 
@@ -35,13 +36,13 @@ const handleWatch = async (interaction, symbol, action) => {
     const { ok, config, reason } = await requireGuildConfig(interaction.guildId);
 
     if (!ok) {
-        await interaction.followUp({ embeds: [buildErrorEmbed(reason)], ephemeral: true });
+        await interaction.followUp(withEphemeral({ embeds: [buildErrorEmbed(reason)] }));
         return;
     }
 
     const permission = requirePermission(interaction.member, config);
     if (!permission.ok) {
-        await interaction.followUp({ embeds: [buildErrorEmbed(permission.reason)], ephemeral: true });
+        await interaction.followUp(withEphemeral({ embeds: [buildErrorEmbed(permission.reason)] }));
         return;
     }
 
@@ -62,20 +63,20 @@ const handleWatch = async (interaction, symbol, action) => {
     });
 
     await interaction.editReply({ embeds: [embed], components });
-    await interaction.followUp({ content: `${action === 'watch' ? 'Added' : 'Removed'} **${symbol}** ${action === 'watch' ? 'to' : 'from'} watchlist.`, ephemeral: true });
+    await interaction.followUp(withEphemeral({ content: `${action === 'watch' ? 'Added' : 'Removed'} **${symbol}** ${action === 'watch' ? 'to' : 'from'} watchlist.` }));
 };
 
 const handleDetails = async (interaction, symbol, intervalOverride) => {
     const { ok, config, reason } = await requireGuildConfig(interaction.guildId);
 
     if (!ok) {
-        await interaction.followUp({ embeds: [buildErrorEmbed(reason)], ephemeral: true });
+        await interaction.followUp(withEphemeral({ embeds: [buildErrorEmbed(reason)] }));
         return;
     }
 
     const permission = requirePermission(interaction.member, config);
     if (!permission.ok) {
-        await interaction.followUp({ embeds: [buildErrorEmbed(permission.reason)], ephemeral: true });
+        await interaction.followUp(withEphemeral({ embeds: [buildErrorEmbed(permission.reason)] }));
         return;
     }
 
@@ -83,7 +84,7 @@ const handleDetails = async (interaction, symbol, intervalOverride) => {
     const quote = await getQuote(symbol, interval);
     const embed = buildAnalysisEmbed({ quote, interval, locale: config.locale });
 
-    await interaction.followUp({ embeds: [embed], ephemeral: true });
+    await interaction.followUp(withEphemeral({ embeds: [embed] }));
 };
 
 const handlePairSelect = async (interaction) => {
@@ -93,13 +94,13 @@ const handlePairSelect = async (interaction) => {
     const { ok, config, reason } = await requireGuildConfig(interaction.guildId);
 
     if (!ok) {
-        await interaction.reply({ embeds: [buildErrorEmbed(reason)], ephemeral: true });
+        await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed(reason)] }));
         return;
     }
 
     const permission = requirePermission(interaction.member, config);
     if (!permission.ok) {
-        await interaction.reply({ embeds: [buildErrorEmbed(permission.reason)], ephemeral: true });
+        await interaction.reply(withEphemeral({ embeds: [buildErrorEmbed(permission.reason)] }));
         return;
     }
 
@@ -154,9 +155,9 @@ const handleFxPulseComponent = async (interaction) => {
     } catch (err) {
         const fallback = buildErrorEmbed('Something went wrong handling that action.');
         if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ embeds: [fallback], ephemeral: true }).catch(() => null);
+            await interaction.reply(withEphemeral({ embeds: [fallback] })).catch(() => null);
         } else {
-            await interaction.followUp({ embeds: [fallback], ephemeral: true }).catch(() => null);
+            await interaction.followUp(withEphemeral({ embeds: [fallback] })).catch(() => null);
         }
         throw err;
     }

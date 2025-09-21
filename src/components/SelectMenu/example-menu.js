@@ -1,5 +1,6 @@
 const DiscordBot = require("../../client/DiscordBot");
 const Component = require("../../structure/Component");
+const { withEphemeral } = require("../../utils/interaction");
 
 module.exports = new Component({
     customId: 'example-menu-id',
@@ -11,10 +12,9 @@ module.exports = new Component({
      */
     run: async (client, interaction) => {
 
-        await interaction.reply({
-            content: 'Replied from a Select Menu interaction! (You selected **' + interaction.values[0] + '**).',
-            ephemeral: true
-        });
+        await interaction.reply(withEphemeral({
+            content: 'Replied from a Select Menu interaction! (You selected **' + interaction.values[0] + '**).'
+        }));
 
     }
 }).toJSON();

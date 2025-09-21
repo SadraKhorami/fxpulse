@@ -21,12 +21,16 @@ const trendArrow = (trend) => {
     }
 };
 
-const marketBadge = (marketStatus) => {
+const marketBadge = ({ marketStatus, status }) => {
     if (marketStatus && marketStatus.isOpen) {
         return '🟢 Open';
     }
 
-    return '⚪ Closed';
+    if ((marketStatus && marketStatus.isOpen === false) || (status && status.toLowerCase() !== 'open')) {
+        return '⚪ Closed';
+    }
+
+    return '🟠 Unknown';
 };
 
 const priceFormatter = (precision) => new Intl.NumberFormat('en-US', {
@@ -89,6 +93,67 @@ const formatBb = (price, bb) => {
     return 'BB mid';
 };
 
+const parseNumeric = (value) => {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : null;
+};
+
+const formatVolatility = (volatility) => {
+    if (!volatility) return null;
+
+    const segments = [];
+
+    const atrValue = parseNumeric(volatility.atr);
+    if (Number.isFinite(atrValue)) {
+        segments.push(`ATR ${atrValue.toFixed(2)}`);
+    }
+
+    const atrPct = parseNumeric(volatility.atr_percentage);
+    if (Number.isFinite(atrPct)) {
+        segments.push(`${atrPct.toFixed(2)}%`);
+    }
+
+    if (volatility.session_volatility && typeof volatility.session_volatility === 'object') {
+        const sessionEntries = Object.entries(volatility.session_volatility)
+            .filter(([, value]) => value !== undefined && value !== null)
+            .map(([key, value]) => `${key}: ${value}`)
+            .slice(0, 3);
+
+        if (sessionEntries.length) {
+            segments.push(sessionEntries.join(', '));
+        }
+    }
+
+    return segments.length ? segments.join(' • ') : null;
+};
+
+const closedNote = (quote) => {
+    const isClosed = Boolean(
+        (quote.marketStatus && quote.marketStatus.isOpen === false) ||
+        (quote.status && quote.status.toLowerCase() !== 'open')
+    );
+
+    if (!isClosed) return null;
+
+    const lines = [];
+    if (quote.message) {
+        lines.push(quote.message);
+    }
+
+    if (quote.marketStatus && quote.marketStatus.reason && (!quote.message || !quote.message.includes(quote.marketStatus.reason))) {
+        lines.push(`Reason: ${quote.marketStatus.reason}`);
+    }
+
+    const nextOpen = quote.nextOpen || quote.marketStatus?.nextOpen;
+    if (nextOpen) {
+        lines.push(`Next open: ${nextOpen}`);
+    }
+
+    return lines.join('\n');
+};
+
+const formatWarningsField = (warnings) => warnings.slice(0, 4).map((entry) => `• ${entry}`).join('\n');
+
 const baseAndVendor = (symbol) => {
     if (!symbol) return { vendor: null, pair: 'Unknown' };
     if (symbol.includes(':')) {
@@ -102,8 +167,9 @@ const buildPriceEmbed = ({ quote, interval, precisionOverride, locale = 'en' }) 
     const { symbol, price, timestamp, trend, marketStatus, indicators = {}, volatility = {} } = quote;
     const { vendor, pair } = baseAndVendor(symbol);
     const trendMeta = trendArrow(trend);
-    const statusBadge = marketBadge(marketStatus);
-    const precision = detectPrecision(price, precisionOverride);
+    const statusBadge = marketBadge({ marketStatus, status: quote.status });
+    const resolvedPrice = Number.isFinite(price) ? price : parseNumeric(price);
+    const precision = detectPrecision(resolvedPrice, precisionOverride);
     const formatter = new Intl.NumberFormat(locale, {
         minimumFractionDigits: precision,
         maximumFractionDigits: precision
@@ -112,13 +178,14 @@ const buildPriceEmbed = ({ quote, interval, precisionOverride, locale = 'en' }) 
     const embed = new EmbedBuilder()
         .setColor(trendMeta.color)
         .setTitle(`${pair}${vendor ? ` (${vendor})` : ''} ${trendMeta.arrow} • ${statusBadge}`)
-        .setFooter({ text: 'FXPulse • data via finance.khorami.dev' });
+        .setFooter({ text: 'FXPulse • developed by wise.fox' });
 
-    if (marketStatus && !marketStatus.isOpen) {
-        embed.setDescription('Market currently closed. Data may be stale.');
+    const marketNote = closedNote(quote);
+    if (marketNote) {
+        embed.setDescription(marketNote);
     }
 
-    const priceField = Number.isFinite(price) ? formatter.format(price) : '—';
+    const priceField = Number.isFinite(resolvedPrice) ? formatter.format(resolvedPrice) : '—';
 
     embed.addFields(
         { name: 'Price', value: priceField, inline: true },
@@ -126,18 +193,23 @@ const buildPriceEmbed = ({ quote, interval, precisionOverride, locale = 'en' }) 
         { name: 'Interval', value: `${interval || quote.interval || '—'}m`, inline: true }
     );
 
-    if (volatility && Number.isFinite(volatility.atr_percentage)) {
-        embed.addFields({ name: 'ATR %', value: `${volatility.atr_percentage.toFixed(2)}%`, inline: true });
+    const volatilitySummary = formatVolatility(volatility);
+    if (volatilitySummary) {
+        embed.addFields({ name: 'Volatility', value: volatilitySummary, inline: true });
     }
 
     const snapshot = [
         formatRsi(indicators.rsi),
         formatMacd(indicators.macd || (indicators.MACD ?? {})),
         formatSma(indicators.sma50, indicators.sma200),
-        formatBb(price, indicators.bollingerBands)
+        formatBb(resolvedPrice, indicators.bollingerBands)
     ].join(' • ');
 
     embed.addFields({ name: 'Snapshot', value: snapshot, inline: false });
+
+    if (Array.isArray(quote.warnings) && quote.warnings.length) {
+        embed.addFields({ name: '⚠️ Data Check', value: formatWarningsField(quote.warnings), inline: false });
+    }
 
     return embed;
 };
@@ -152,8 +224,10 @@ const formatStochastic = (stochastic) => {
 
 const formatAtr = (volatility) => {
     if (!volatility) return 'ATR —';
-    const atr = Number.isFinite(volatility.atr) ? `${volatility.atr.toFixed(2)}` : '—';
-    const atrPct = Number.isFinite(volatility.atr_percentage) ? `${volatility.atr_percentage.toFixed(2)}%` : '—';
+    const atrValue = parseNumeric(volatility.atr);
+    const atrPctValue = parseNumeric(volatility.atr_percentage);
+    const atr = Number.isFinite(atrValue) ? `${atrValue.toFixed(2)}` : '—';
+    const atrPct = Number.isFinite(atrPctValue) ? `${atrPctValue.toFixed(2)}%` : '—';
     return `ATR ${atr} (${atrPct})`;
 };
 
@@ -201,9 +275,20 @@ const buildAnalysisEmbed = ({ quote, interval, locale = 'en' }) => {
     const baseEmbed = buildPriceEmbed({ quote, interval, locale });
     const { indicators = {}, volatility = {} } = quote;
 
-    const closed = quote.marketStatus && quote.marketStatus.isOpen === false;
     const interpretation = deriveInterpretation(quote);
-    baseEmbed.setDescription(closed ? `Market currently closed. Data may be stale.\n\n${interpretation}` : interpretation);
+    const descriptionParts = [];
+
+    if (baseEmbed.data?.description) {
+        descriptionParts.push(baseEmbed.data.description);
+    }
+
+    if (interpretation) {
+        descriptionParts.push(interpretation);
+    }
+
+    if (descriptionParts.length) {
+        baseEmbed.setDescription(descriptionParts.join('\n\n'));
+    }
 
     baseEmbed.addFields(
         { name: 'RSI', value: Number.isFinite(indicators.rsi) ? indicators.rsi.toFixed(2) : '—', inline: true },
@@ -221,7 +306,7 @@ const buildErrorEmbed = (message) => new EmbedBuilder()
     .setColor(colors.bearish)
     .setTitle('FXPulse')
     .setDescription(message)
-    .setFooter({ text: 'FXPulse • data via finance.khorami.dev' });
+    .setFooter({ text: 'FXPulse • developed by wise.fox' });
 
 module.exports = {
     buildPriceEmbed,
