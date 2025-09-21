@@ -5,6 +5,7 @@ const guildConfigService = require('../../services/guildConfig');
 const { buildPriceEmbed, buildAnalysisEmbed, buildErrorEmbed } = require('../../utils/embed');
 const { buildPriceComponents } = require('../../utils/components');
 const { requireGuildConfig, requirePermission } = require('../../permissions/guards');
+const { resolveTickerPrecision } = require('../../utils/voiceTicker');
 const { withEphemeral } = require('../../utils/interaction');
 
 const INTERVAL_DESC = 'Interval in minutes (1,5,15,60). Defaults to guild setting or API default.';
@@ -189,7 +190,12 @@ const handlePrice = async (interaction, config) => {
 
     const quote = await getQuote(symbol, interval);
 
-    const embed = buildPriceEmbed({ quote, interval, precisionOverride: config.voiceTicker?.precision, locale: config.locale });
+    const embed = buildPriceEmbed({
+        quote,
+        interval,
+        precisionOverride: resolveTickerPrecision(config),
+        locale: config.locale
+    });
     const components = buildPriceComponents({
         symbol,
         interval,
@@ -210,7 +216,11 @@ const handleAnalyze = async (interaction, config) => {
 
     const quote = await getQuote(symbol, interval);
 
-    const embed = buildAnalysisEmbed({ quote, interval, locale: config.locale });
+    const embed = buildAnalysisEmbed({
+        quote,
+        interval,
+        locale: config.locale
+    });
 
     await interaction.editReply({ embeds: [embed] });
 };

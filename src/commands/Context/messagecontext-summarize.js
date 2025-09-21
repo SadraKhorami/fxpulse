@@ -2,6 +2,7 @@ const ApplicationCommand = require('../../structure/ApplicationCommand');
 const { buildPriceEmbed, buildErrorEmbed } = require('../../utils/embed');
 const { getQuote, normalizeSymbol } = require('../../services/quotes');
 const { requireGuildConfig, requirePermission } = require('../../permissions/guards');
+const { resolveTickerPrecision } = require('../../utils/voiceTicker');
 const { withEphemeral } = require('../../utils/interaction');
 
 const SYMBOL_REGEX = /([A-Z]{2,6}:[A-Z]{3,6}|[A-Z]{3,6})/g;
@@ -52,7 +53,12 @@ module.exports = new ApplicationCommand({
         try {
             await interaction.deferReply(withEphemeral());
             const quote = await getQuote(symbol, config.defaultInterval);
-            const embed = buildPriceEmbed({ quote, interval: config.defaultInterval, precisionOverride: config.voiceTicker?.precision, locale: config.locale });
+            const embed = buildPriceEmbed({
+                quote,
+                interval: config.defaultInterval,
+                precisionOverride: resolveTickerPrecision(config),
+                locale: config.locale
+            });
             await interaction.editReply({ embeds: [embed] });
         } catch (err) {
             await interaction.editReply({ embeds: [buildErrorEmbed('Unable to fetch market data right now.')] });

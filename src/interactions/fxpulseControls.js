@@ -3,6 +3,7 @@ const { buildPriceComponents, parseCustomId } = require('../utils/components');
 const { getQuote, normalizeSymbol } = require('../services/quotes');
 const guildConfigService = require('../services/guildConfig');
 const { requireGuildConfig, requirePermission } = require('../permissions/guards');
+const { resolveTickerPrecision } = require('../utils/voiceTicker');
 const { withEphemeral } = require('../utils/interaction');
 
 const handlePriceUpdate = async (interaction, symbol, intervalOverride) => {
@@ -21,7 +22,12 @@ const handlePriceUpdate = async (interaction, symbol, intervalOverride) => {
 
     const interval = intervalOverride || config.defaultInterval;
     const quote = await getQuote(symbol, interval);
-    const embed = buildPriceEmbed({ quote, interval, precisionOverride: config.voiceTicker?.precision, locale: config.locale });
+    const embed = buildPriceEmbed({
+        quote,
+        interval,
+        precisionOverride: resolveTickerPrecision(config),
+        locale: config.locale
+    });
     const components = buildPriceComponents({
         symbol,
         interval,
@@ -54,7 +60,12 @@ const handleWatch = async (interaction, symbol, action) => {
     const intervalSegment = parsed?.args?.[1] || config.defaultInterval;
     const quote = await getQuote(symbol, intervalSegment);
 
-    const embed = buildPriceEmbed({ quote, interval: intervalSegment, precisionOverride: updated.voiceTicker?.precision, locale: updated.locale });
+    const embed = buildPriceEmbed({
+        quote,
+        interval: intervalSegment,
+        precisionOverride: resolveTickerPrecision(updated),
+        locale: updated.locale
+    });
     const components = buildPriceComponents({
         symbol,
         interval: intervalSegment,
@@ -108,7 +119,12 @@ const handlePairSelect = async (interaction) => {
 
     const interval = config.defaultInterval;
     const quote = await getQuote(symbol, interval);
-    const embed = buildPriceEmbed({ quote, interval, precisionOverride: config.voiceTicker?.precision, locale: config.locale });
+    const embed = buildPriceEmbed({
+        quote,
+        interval,
+        precisionOverride: resolveTickerPrecision(config),
+        locale: config.locale
+    });
     const components = buildPriceComponents({
         symbol,
         interval,

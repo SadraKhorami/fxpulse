@@ -15,6 +15,7 @@ const GuildConfigSchema = new Schema({
     allowedRoles: { type: [String], default: [] },
     watchlist: { type: [String], default: [] },
     voiceTicker: { type: VoiceTickerSchema, default: () => ({}) },
+    voiceTickers: { type: [VoiceTickerSchema], default: () => [] },
     defaultInterval: { type: String, default: '15' },
     locale: { type: String, default: 'en' }
 }, { timestamps: true });
