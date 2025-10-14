@@ -20,6 +20,7 @@ FXPulse is a Discord bot built on **discord.js v14** (Node 18+) that surfaces FX
    DISCORD_TOKEN=your-bot-token
    DISCORD_CLIENT_ID=your-client-id
    MONGODB_URI=mongodb+srv://...
+   FINANCE_API_KEY=your-x-api-key
    # Optional overrides
    # FINANCE_API_BASE=https://finance.khorami.dev/api
    # UPDATE_INTERVAL_MS=30000

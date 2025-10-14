@@ -172,7 +172,7 @@ const shouldUseCache = (entry) => {
 };
 
 const getQuote = async (symbol, interval) => {
-    const { apiBase, cacheTtlMs } = getEnv();
+    const { apiBase, cacheTtlMs, apiKey, apiBearer } = getEnv();
     const normalizedSymbol = normalizeSymbol(symbol);
 
     if (!normalizedSymbol) {
@@ -199,13 +199,22 @@ const getQuote = async (symbol, interval) => {
             url.searchParams.set('interval', interval);
         }
 
+        const headers = {
+            'Accept': 'application/json',
+            'x-api-key': apiKey
+        };
+
+        if (apiBearer) {
+            headers.Authorization = apiBearer.startsWith('Bearer ')
+                ? apiBearer
+                : `Bearer ${apiBearer}`;
+        }
+
         let response;
         try {
             response = await fetch(url, {
                 method: 'GET',
-                headers: {
-                    'Accept': 'application/json'
-                }
+                headers
             });
         } catch (err) {
             if (lastGood) {
